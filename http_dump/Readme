@@ -1,0 +1,2 @@
+on internet connection, game first checks for updates on http server, this is a dump of requested page.
+There's game version dependence in request, so for every game version it has own update procedure (patching).

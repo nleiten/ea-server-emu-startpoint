@@ -1,0 +1,161 @@
+====================================================================================
+    # this is a comment
+    / this is a comment
+    ; this is a comment
+
+    ; the first line "=========" you see above is necessary and must be long at
+    ; least 32 chars
+    ; it's needed to tell lpatch that this file is not an old binary lpatch.dat
+
+    # the data file for lpatch is very simple to use since it's only a simple text
+    # file (it's not important if it's saved in DOS, Unix or Macintosh mode) which
+    # you can edit easily.
+    # Here we have commands (in capital letters) and text strings containing data or
+    # instructions
+
+    # note that at the moment the order of the commands is enough important so
+    # please respect it to avoid that some commands will be skipped
+
+
+    ; TITLE is used for specifying a tile to show when the patch starts with the
+    ; FILE command
+
+TITLE
+    this is a title
+    author: me
+    e-mail: me@me.me
+    web:    www.me.me
+
+
+    ; INTRO is referred to an introduction or a intial comment that will be showed
+    ; just after TITLE
+
+INTRO
+    this is an introduction
+    bla blabla
+    bla
+
+
+    ; MD5 is the MD5 hash of the input file, use it if you want to force the
+    ; patching of a specific file
+
+MD5
+    00112233445566778899AABBCCDDEEFF
+
+
+    ; the loading of the input file and the handling of the three commands above
+    ; starts here.
+    ; FILE is the name or part of the name you want to load.
+    ; you can use the ; char (don't worry comments are handled only at the beginning
+    ; of the lines) for separating the filenames
+
+FILE
+    file1.dll;file2*.exe
+
+
+    ; the following has been inserted only for making the work of the author more
+    ; easy in some situations (for example executables patching)
+    ; so if RVA is 00400000 and you want to patch a byte at file offset 8 you will
+    ; use the offset 400008 in the OFFSET section
+    ; if you do NOT specify the value will be activated the automatic parsing of
+    ; the input executable with the correct calculation of the rva
+
+RVA
+    00400000
+
+
+    ; when the patching process is finished you have the occasion to specify a
+    ; comment
+
+COMMENT
+    this is the final comment
+
+
+    /* now start the patching commands */
+
+    ; the offsets and the bytes here are handled by default in hexadecimal:
+    ; 0x11223344 = 0x11223344
+    ; 11223344   = 0x11223344
+    ; $11223344  = 0x11223344
+    ; b10101011  = 0xab         // binary
+    ; 'a'        = 0x61         // note that ' ' (for the space) can NOT be used!!!
+    ;                           // these chars work just like printf, '\n' for line
+    ;                           // feed, '\x10' for hex, '\123' for octal and so on
+    ; ?          = dynamic byte // use it when a byte is not known or you want to
+    ;                           // skip its patching
+    ;
+    ; the following instead work only with patch bytes:
+    ; + used for adding a specific number to the original byte
+    ;   if you use +04 and the original byte is 08, the patch will be 0c
+    ; - used for substracting a specific number to the original byte
+    ;   if you use -04 and the original byte is 08, the patch will be 04
+
+    ; just the offsets of the bytes to change
+    ; subsequent offsets can be also substituited with their relative position
+    ; from the latest offset like in the last examples
+    ; then exist also two shortcuts which helps a lot with binary patching:
+    ; |number   for adding a 32 bit number in intel/little endian mode
+    ;           example: |12345678  =  78 56 34 12
+    ; ^number   for adding an absolute offset referenced to the actual one
+    ;           who plays with executables know abot what I refer
+    ;           watch some of my patches (like that for IGI2) for the examples
+
+OFFSET
+    11223344    11  22          // 0x11                 -> 0x22
+    00000001    'a' '\n'        // 0x61                 -> 0x0a
+    123         $10 $20         // 0x10                 -> 0x20
+    2           ?   10          // any byte at offset 2 -> 0x10
+    0x3         ??  +10         // any byte at offset 3 plus 16
+    +           10  20          // offset 4, from 0x10 to 0x20
+    +4          10  20          // offset 8, from 0x10 to 0x20
+    -2          10  20          // offset 6, from 0x10 to 0x20
+
+
+ONLY_ONE    ; if there are multiple patches, this one forces the handling only of
+            ; the first with the original pattern existent in the file
+            ; for example this is useful if I create a patch for different patterns
+            ; and want that only one is handled... not really very useful probably
+            ; it could be removed in future
+
+
+    ; the strings you want to substituite
+
+STRING
+    hello   HELLO               // hello             -> HELLO
+    h?ll?   ?E??O               // if hello or halla -> hEllO
+    "this is a string with spaces"  "this_is_a_string_with_spaces"
+    "very long string"              "short string"      // the rest is left as is
+    "you are a ????er!"             "you are a rocker!" // ok?
+
+
+    ; and now the most useful commands for binary patching
+    ; exist other special bytes which affects only this BYTES_* commands and are
+    ; * which can be used to specify the amount of byte to skip
+    ;   if you use *04 it's the same of ?? ?? ?? ??
+    ;   remember that this number can't be longer than 65534
+
+    ; the following is just a real example I have used for Call of Duty
+
+BYTES_ORIGINAL              ; WINDOWS code
+    C6 05 ?? ?? ?? ?? 00    ; mov byte[0093968F], 00
+    7C 08                   ; jl 0044DC35
+    81 FB 00 7D 00 00       ; cmp ebx, 00007D00
+    7C 0F                   ; jl 0044DC44
+    68 ?? ?? ?? ??          ; push 0059EFB8
+    6A 01                   ; push 001
+    E8 ?? ?? FE FF          ; call 00437F70
+    83 C4 08                ; add esp, 008
+
+BYTES_PATCH
+    ?? ?? ?? ?? ?? ?? ??
+    ?? ??
+    ?? ?? ?? ?? ?? ??
+    ?? ??
+    33 DB                   ; xor ebx, ebx
+    90 90 90 90 90
+    90 90 90 90 90
+    90 90 90
+
+    ; these are all the available commands
+    ; do you want to patch another file?
+    ; ok, simply re-use all the previous commands

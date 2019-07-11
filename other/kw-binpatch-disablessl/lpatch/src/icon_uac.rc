@@ -1,0 +1,3 @@
+#include "winuser.h"
+IDD_ICON ICON lpatch.ico
+1 RT_MANIFEST uac.manifest
